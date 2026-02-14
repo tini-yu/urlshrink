@@ -59,7 +59,7 @@ func createShortURL(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(res, convertedURL)
+	fmt.Fprint(res, convertedURL)
 }
 
 func main() {

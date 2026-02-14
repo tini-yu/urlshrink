@@ -4,15 +4,20 @@ import (
 	"net/http"
 
 	"github.com/tini-yu/urlshrink/internal/handler"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", handler.CreateShortURL)
-	mux.HandleFunc("/{id}", handler.GetFullURL)
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
-	err := http.ListenAndServe("localhost:8080", mux)
-	if err != nil {
-		panic(err)
-	}
+	r.Route("/", func(r chi.Router) {
+		r.Post("/", handler.CreateShortURL)
+		r.Get("/{id}", handler.GetFullURL)
+	})
+
+	http.ListenAndServe(":8080", r)
 }

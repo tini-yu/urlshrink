@@ -3,20 +3,16 @@ package handler
 import (
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/tini-yu/urlshrink/internal/storage"
 )
 
 func GetFullURL(res http.ResponseWriter, req *http.Request) {
-	id := req.PathValue("id") // т.к. смотрит /{id}
+	id := chi.URLParam(req, "id")
 	getFullURLLogic(res, req, id)
 }
 
 func getFullURLLogic(res http.ResponseWriter, req *http.Request, id string) {
-	if req.Method != http.MethodGet {
-		http.Error(res, "Только GET запросы!", http.StatusBadRequest)
-		return
-	}
-
 	if id == "" {
 		http.Error(res, "отсутсвует id", http.StatusBadRequest)
 		return

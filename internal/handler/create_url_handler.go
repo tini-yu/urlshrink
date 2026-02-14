@@ -11,12 +11,7 @@ import (
 )
 
 func CreateShortURL(res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		http.Error(res, "Только POST запросы!", http.StatusBadRequest)
-		return
-	}
 
-	// Читаем тело запроса (text/plain)
 	bodyBytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		http.Error(res, "ошибка чтения тела запроса", http.StatusBadRequest)
@@ -31,7 +26,6 @@ func CreateShortURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// uuid для уникального нового url
 	uuid := uuid.New().String()
 
 	convertedURL := fmt.Sprintf("http://localhost:8080/%s", uuid)

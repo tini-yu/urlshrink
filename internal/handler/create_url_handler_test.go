@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/tini-yu/urlshrink/internal/storage"
@@ -40,8 +41,8 @@ func TestCreateShortURL(t *testing.T) {
 			name:          "Не POST метод",
 			method:        http.MethodGet,
 			body:          "",
-			wantStatus:    http.StatusBadRequest,
-			wantErr:       "Только POST запросы!",
+			wantStatus:    http.StatusMethodNotAllowed,
+			wantErr:       "",
 			wantMapUpdate: false,
 		},
 		{
@@ -71,10 +72,15 @@ func TestCreateShortURL(t *testing.T) {
 				body = strings.NewReader(test.body)
 			}
 
-			req := httptest.NewRequest(test.method, "/api/to/shorten", body)
+			r := chi.NewRouter()
+			r.Post("/", CreateShortURL)
+			
+			req := httptest.NewRequest(test.method, "/", body)
 			req.Header.Set("Content-Type", "text/plain")
 
 			newr := httptest.NewRecorder()
+
+			r.ServeHTTP(newr, req)
 
 			CreateShortURL(newr, req)
 

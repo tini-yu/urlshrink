@@ -52,7 +52,7 @@ func TestGetFullURL(t *testing.T) {
 			id:           "/id",
 			setupStorage: func() {},
 			wantStatus:   http.StatusBadRequest,
-			wantErr:      "Только GET запросы!",
+			wantErr:      "",
 		},
 		{
 			name:   "Существует id, но значение пустое",

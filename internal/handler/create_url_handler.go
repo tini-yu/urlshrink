@@ -10,7 +10,7 @@ import (
 	"github.com/tini-yu/urlshrink/internal/storage"
 )
 
-func CreateShortURL(res http.ResponseWriter, req *http.Request) {
+func (s *Shortener) CreateShortURL(res http.ResponseWriter, req *http.Request) {
 
 	bodyBytes, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -28,7 +28,7 @@ func CreateShortURL(res http.ResponseWriter, req *http.Request) {
 
 	uuid := uuid.New().String()
 
-	convertedURL := fmt.Sprintf("http://localhost:8080/%s", uuid)
+	convertedURL := fmt.Sprintf("%s/%s", s.cfg.BaseShortURL, uuid)
 	storage.ShrunkURLs[uuid] = originalURL
 
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")

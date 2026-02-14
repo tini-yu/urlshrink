@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/tini-yu/urlshrink/internal/config"
 	"github.com/tini-yu/urlshrink/internal/storage"
 )
 
@@ -29,7 +30,7 @@ func TestCreateShortURL(t *testing.T) {
 			method:        http.MethodPost,
 			body:          "http://some.website",
 			wantStatus:    http.StatusCreated,
-			wantBodyPref:  "http://localhost:8080/",
+			wantBodyPref:  "http://localhost:9090",
 			wantMapUpdate: true,
 			uuidCheck: func(t *testing.T, createdUUID string) {
 				original, exists := storage.ShrunkURLs[createdUUID]
@@ -72,9 +73,16 @@ func TestCreateShortURL(t *testing.T) {
 				body = strings.NewReader(test.body)
 			}
 
+			testBaseURL := "http://localhost:9090" // ← фиксированное значение для теста
+			cfg := config.Config{
+				BaseShortURL: testBaseURL,
+			}
+
+			h := NewShortener(cfg)
+
 			r := chi.NewRouter()
-			r.Post("/", CreateShortURL)
-			
+			r.Post("/", h.CreateShortURL)
+
 			req := httptest.NewRequest(test.method, "/", body)
 			req.Header.Set("Content-Type", "text/plain")
 
@@ -82,9 +90,11 @@ func TestCreateShortURL(t *testing.T) {
 
 			r.ServeHTTP(newr, req)
 
-			CreateShortURL(newr, req)
-
 			assert.Equal(t, test.wantStatus, newr.Code)
+			// При неверном методе заголовка нету
+			if test.wantStatus == http.StatusCreated {
+				assert.Equal(t, "text/plain; charset=utf-8", newr.Header().Get("Content-Type"))
+			}
 
 			responseBody := newr.Body.String()
 			if test.wantErr != "" {
@@ -92,9 +102,8 @@ func TestCreateShortURL(t *testing.T) {
 			}
 			if test.wantBodyPref != "" {
 				assert.Contains(t, responseBody, test.wantBodyPref)
-				assert.True(t, strings.HasPrefix(responseBody, "http://localhost:8080/"))
+				assert.True(t, strings.HasPrefix(responseBody, "http://localhost:9090/"))
 			}
-			assert.Equal(t, "text/plain; charset=utf-8", newr.Header().Get("Content-Type"))
 
 			if test.wantMapUpdate {
 				assert.NotEmpty(t, storage.ShrunkURLs)

@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"log"
 	"strings"
 )
 
@@ -27,6 +28,8 @@ func Parse() Config {
 		} else {
 			cfg.HTTPAddr = ":" + cfg.ServerPort
 		}
+
+		log.Printf("Переопределен порт: %s", cfg.ServerPort)
 	}
 
 	return cfg

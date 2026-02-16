@@ -4,22 +4,21 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/tini-yu/urlshrink/internal/storage"
 )
 
-func GetFullURL(res http.ResponseWriter, req *http.Request) {
+func (s *Shortener) GetFullURL(res http.ResponseWriter, req *http.Request) {
 	id := chi.URLParam(req, "id")
-	getFullURLLogic(res, req, id)
+	s.getFullURLLogic(res, req, id)
 }
 
-func getFullURLLogic(res http.ResponseWriter, req *http.Request, id string) {
-	if id == "" {
-		http.Error(res, "отсутсвует id", http.StatusBadRequest)
-		return
-	}
+func (s *Shortener) getFullURLLogic(res http.ResponseWriter, req *http.Request, id string) {
+	// if id == "" {
+	// 	http.Error(res, "отсутсвует id", http.StatusBadRequest)
+	// 	return
+	// } //Вроде никогда не сработает, т.к. пустой id = Page Not Found
 
-	originalURL, exists := storage.ShrunkURLs[id]
-	if originalURL == "" || !exists {
+	originalURL, ok := s.storage.GetOriginalURL(id)
+	if originalURL == "" || !ok {
 		http.Error(res, "неверный URL", http.StatusBadRequest)
 		return
 	}

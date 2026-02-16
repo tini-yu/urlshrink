@@ -5,7 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/tini-yu/urlshrink/internal/config"
 	"github.com/tini-yu/urlshrink/internal/storage"
 )
 
@@ -13,8 +15,8 @@ func TestGetFullURL(t *testing.T) {
 	tests := []struct {
 		name         string
 		method       string
-		id           string
-		setupStorage func() // т.к. надо уже иметь данные в мапе
+		path         string
+		setupStorage func(storage *storage.URLStorage)
 		wantStatus   int
 		wantHeader   string // Location
 		wantErr      string
@@ -22,9 +24,9 @@ func TestGetFullURL(t *testing.T) {
 		{
 			name:   "Успешный редирект",
 			method: http.MethodGet,
-			id:     "550e8400-e29b-41d4-a716-446655440000",
-			setupStorage: func() {
-				storage.ShrunkURLs["550e8400-e29b-41d4-a716-446655440000"] = "http://some.website"
+			path:   "/38fg338yf",
+			setupStorage: func(storage *storage.URLStorage) {
+				storage.SetURL("38fg338yf", "http://some.website")
 			},
 			wantStatus: http.StatusTemporaryRedirect,
 			wantHeader: "http://some.website",
@@ -33,33 +35,32 @@ func TestGetFullURL(t *testing.T) {
 		{
 			name:         "Неправильный {id}",
 			method:       http.MethodGet,
-			id:           "какой-то-неправильный-id",
-			setupStorage: func() {},
+			path:         "/какой-то-неправильный-id",
+			setupStorage: func(storage *storage.URLStorage) {},
 			wantStatus:   http.StatusBadRequest,
 			wantErr:      "неверный URL",
 		},
 		{
 			name:         "Пустой {id}",
 			method:       http.MethodGet,
-			id:           "",
-			setupStorage: func() {},
-			wantStatus:   http.StatusBadRequest,
-			wantErr:      "отсутсвует id",
+			path:         "/",
+			setupStorage: func(storage *storage.URLStorage) {},
+			wantStatus:   http.StatusNotFound,
 		},
 		{
 			name:         "Hе GET метод",
 			method:       http.MethodPost,
-			id:           "/id",
-			setupStorage: func() {},
-			wantStatus:   http.StatusBadRequest,
+			path:         "/id",
+			setupStorage: func(storage *storage.URLStorage) {},
+			wantStatus:   http.StatusMethodNotAllowed,
 			wantErr:      "",
 		},
 		{
 			name:   "Существует id, но значение пустое",
 			method: http.MethodGet,
-			id:     "rfrjt-nj-bl",
-			setupStorage: func() {
-				storage.ShrunkURLs["rfrjt-nj-bl"] = ""
+			path:   "/4bfsFae",
+			setupStorage: func(storage *storage.URLStorage) {
+				storage.SetURL("4bfsFae", "")
 			},
 			wantStatus: http.StatusBadRequest,
 			wantErr:    "неверный URL",
@@ -68,16 +69,20 @@ func TestGetFullURL(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			storage.ShrunkURLs = make(map[string]string)
+			storage := storage.NewURLStorage()
 
 			if test.setupStorage != nil {
-				test.setupStorage()
+				test.setupStorage(storage)
 			}
 
-			req := httptest.NewRequest(test.method, "/", nil)
+			h := NewShortener(storage, config.Config{}) // пустой конфиг сойдет
+			r := chi.NewRouter()
+			r.Get("/{id}", h.GetFullURL)
+
+			req := httptest.NewRequest(test.method, test.path, nil)
 			newr := httptest.NewRecorder()
 
-			getFullURLLogic(newr, req, test.id)
+			r.ServeHTTP(newr, req)
 
 			assert.Equal(t, test.wantStatus, newr.Code, "код статуса не совпадает")
 

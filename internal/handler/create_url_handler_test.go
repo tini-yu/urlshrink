@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/tini-yu/urlshrink/internal/config"
 	"github.com/tini-yu/urlshrink/internal/storage"
@@ -23,7 +22,8 @@ func TestCreateShortURL(t *testing.T) {
 		wantErr       string
 		wantBodyPref  string
 		wantMapUpdate bool
-		uuidCheck     func(t *testing.T, createdUUID string)
+		//Проверка, что обе ссылки верные:
+		shortIDCheck     func(t *testing.T, createdShortID string, store *storage.URLStorage)
 	}{
 		{
 			name:          "Успешное сокращение",
@@ -32,9 +32,9 @@ func TestCreateShortURL(t *testing.T) {
 			wantStatus:    http.StatusCreated,
 			wantBodyPref:  "http://localhost:9090",
 			wantMapUpdate: true,
-			uuidCheck: func(t *testing.T, createdUUID string) {
-				original, exists := storage.ShrunkURLs[createdUUID]
-				assert.True(t, exists)
+			shortIDCheck: func(t *testing.T, createdShortID string, store *storage.URLStorage) {
+				original, ok := store.GetOriginalURL(createdShortID)
+				assert.True(t, ok)
 				assert.Equal(t, "http://some.website", original)
 			},
 		},
@@ -66,19 +66,19 @@ func TestCreateShortURL(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			storage.ShrunkURLs = make(map[string]string)
 
 			var body io.Reader
 			if test.body != "" && test.method == http.MethodPost {
 				body = strings.NewReader(test.body)
 			}
 
-			testBaseURL := "http://localhost:9090" // ← фиксированное значение для теста
+			testBaseURL := "http://localhost:9090"
 			cfg := config.Config{
 				BaseShortURL: testBaseURL,
 			}
 
-			h := NewShortener(cfg)
+			storage := storage.NewURLStorage()
+			h := NewShortener(storage, cfg)
 
 			r := chi.NewRouter()
 			r.Post("/", h.CreateShortURL)
@@ -106,20 +106,16 @@ func TestCreateShortURL(t *testing.T) {
 			}
 
 			if test.wantMapUpdate {
-				assert.NotEmpty(t, storage.ShrunkURLs)
-				assert.Len(t, storage.ShrunkURLs, 1)
+				assert.False(t, storage.IsEmpty())
+				assert.Equal(t, 1, storage.Len()) //одна запись
 
-				// uuid проверка
-				for key := range storage.ShrunkURLs {
-					_, err := uuid.Parse(key)
-					assert.NoError(t, err, "ключ должен быть валидным UUID")
-
-					if test.uuidCheck != nil {
-						test.uuidCheck(t, key)
-					}
+				key := storage.GetKeys()[0]
+				if test.shortIDCheck != nil {
+					test.shortIDCheck(t, key, storage)
 				}
+
 			} else {
-				assert.Empty(t, storage.ShrunkURLs)
+				assert.True(t, storage.IsEmpty())
 			}
 		})
 	}

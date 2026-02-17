@@ -1,7 +1,9 @@
 package storage
 
+import "errors"
+
 type URLStorage struct {
-	urls  map[string]string     //[короткая]: оригинал
+	urls map[string]string //[короткая]: оригинал
 }
 
 func NewURLStorage() *URLStorage {
@@ -38,4 +40,18 @@ func (s *URLStorage) GetKeys() []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+var (
+	ErrKeyAlreadyExists = errors.New("short id already exists")
+)
+
+func (s *URLStorage) SetIfNotExists(shortID, originalURL string) error {
+
+	if _, exists := s.urls[shortID]; exists {
+		return ErrKeyAlreadyExists
+	}
+
+	s.urls[shortID] = originalURL
+	return nil
 }

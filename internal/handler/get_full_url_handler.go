@@ -12,10 +12,6 @@ func (s *Shortener) GetFullURL(res http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Shortener) getFullURLLogic(res http.ResponseWriter, req *http.Request, id string) {
-	// if id == "" {
-	// 	http.Error(res, "отсутсвует id", http.StatusBadRequest)
-	// 	return
-	// } //Вроде никогда не сработает, т.к. пустой id = Page Not Found
 
 	originalURL, ok := s.storage.GetOriginalURL(id)
 	if originalURL == "" || !ok {

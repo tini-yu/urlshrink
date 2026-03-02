@@ -6,7 +6,9 @@ import (
 
 	"github.com/tini-yu/urlshrink/internal/config"
 	"github.com/tini-yu/urlshrink/internal/handler"
+	mware "github.com/tini-yu/urlshrink/internal/middleware"
 	"github.com/tini-yu/urlshrink/internal/storage"
+	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -14,11 +16,21 @@ import (
 
 func main() {
 	cfg := config.Parse()
+
+	// логгер zap
+	zapLog, err := zap.NewDevelopment() // потом NewProduction() поменять
+	if err != nil {
+		log.Fatalf("Не получилось инициализировать zap: %v", err)
+	}
+	defer zapLog.Sync()
+
+	zap.RedirectStdLog(zapLog)
+
 	storage := storage.NewURLStorage()
 	shortener := handler.NewShortener(storage, cfg)
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(mware.ZapLoggerMiddleware(zapLog))
 	r.Use(middleware.Recoverer)
 
 	r.Route("/", func(r chi.Router) {
@@ -26,9 +38,9 @@ func main() {
 		r.Get("/{id}", shortener.GetFullURL)
 	})
 
-	log.Printf("Сервер запущен по адресу = %s", cfg.HTTPAddr)
-	err := http.ListenAndServe(cfg.HTTPAddr, r)
+	zapLog.Info("Сервер запущен", zap.String("address", cfg.HTTPAddr))
+	err = http.ListenAndServe(cfg.HTTPAddr, r)
 	if err != nil {
-		log.Fatalf("Ошибка запуска сервера: %v", err)
+		zapLog.Fatal("Ошибка запуска сервера", zap.Error(err))
 	}
 }

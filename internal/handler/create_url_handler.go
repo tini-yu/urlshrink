@@ -19,12 +19,9 @@ const (
 )
 
 func (s *Shortener) createShortID() string {
-	for {
 		code := randomString(shortCodeLength)
-		if _, exists := s.storage.GetOriginalURL(code); !exists {
-			return code
-		}
-	}
+		return code
+
 }
 
 func randomString(length int) string {

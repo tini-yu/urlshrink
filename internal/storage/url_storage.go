@@ -48,7 +48,7 @@ var (
 
 func (s *URLStorage) SetIfNotExists(shortID, originalURL string) error {
 
-	if _, exists := s.urls[shortID]; exists {
+	if _, ok := s.urls[shortID]; ok {
 		return ErrKeyAlreadyExists
 	}
 

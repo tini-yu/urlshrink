@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -12,6 +13,7 @@ type Config struct {
 	ServerPort   string
 }
 
+//Приоритет на переменную окружения, потом флаг, потом по умолчанию
 func Parse() Config {
 	var cfg Config
 
@@ -30,6 +32,15 @@ func Parse() Config {
 		}
 
 		log.Printf("Переопределен порт: %s", cfg.ServerPort)
+	}
+
+	if envRunAddr := os.Getenv("SERVER_ADDRESS"); envRunAddr != "" {
+		cfg.HTTPAddr = envRunAddr
+		log.Printf("Переопределен адрес сервера: %s", cfg.HTTPAddr)
+	}
+	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
+		cfg.BaseShortURL = envBaseURL
+		log.Printf("Переопределен базовый адрес коротких ссылок: %s", cfg.BaseShortURL)
 	}
 
 	return cfg

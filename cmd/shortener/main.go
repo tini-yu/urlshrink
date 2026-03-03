@@ -36,6 +36,7 @@ func main() {
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", shortener.CreateShortURL)
 		r.Get("/{id}", shortener.GetFullURL)
+		r.Post("/api/shorten", shortener.CreateShortURLJSON)
 	})
 
 	zapLog.Info("Сервер запущен", zap.String("address", cfg.HTTPAddr))

@@ -31,6 +31,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(mware.ZapLoggerMiddleware(zapLog))
+	r.Use(mware.GzipMiddleware)
 	r.Use(middleware.Recoverer)
 
 	r.Route("/", func(r chi.Router) {

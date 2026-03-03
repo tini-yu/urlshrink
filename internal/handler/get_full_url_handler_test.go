@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -16,7 +17,7 @@ func TestGetFullURL(t *testing.T) {
 		name         string
 		method       string
 		path         string
-		setupStorage func(storage *storage.URLStorage)
+		setupStorage func(storage *storage.FileURLStorage)
 		wantStatus   int
 		wantHeader   string // Location
 		wantErr      string
@@ -25,7 +26,7 @@ func TestGetFullURL(t *testing.T) {
 			name:   "Успешный редирект",
 			method: http.MethodGet,
 			path:   "/38fg338yf",
-			setupStorage: func(storage *storage.URLStorage) {
+			setupStorage: func(storage *storage.FileURLStorage) {
 				storage.SetURL("38fg338yf", "http://some.website")
 			},
 			wantStatus: http.StatusTemporaryRedirect,
@@ -36,7 +37,7 @@ func TestGetFullURL(t *testing.T) {
 			name:         "Неправильный {id}",
 			method:       http.MethodGet,
 			path:         "/какой-то-неправильный-id",
-			setupStorage: func(storage *storage.URLStorage) {},
+			setupStorage: func(storage *storage.FileURLStorage) {},
 			wantStatus:   http.StatusBadRequest,
 			wantErr:      "неверный URL",
 		},
@@ -44,14 +45,14 @@ func TestGetFullURL(t *testing.T) {
 			name:         "Пустой {id}",
 			method:       http.MethodGet,
 			path:         "/",
-			setupStorage: func(storage *storage.URLStorage) {},
+			setupStorage: func(storage *storage.FileURLStorage) {},
 			wantStatus:   http.StatusNotFound,
 		},
 		{
 			name:         "Hе GET метод",
 			method:       http.MethodPost,
 			path:         "/id",
-			setupStorage: func(storage *storage.URLStorage) {},
+			setupStorage: func(storage *storage.FileURLStorage) {},
 			wantStatus:   http.StatusMethodNotAllowed,
 			wantErr:      "",
 		},
@@ -59,7 +60,7 @@ func TestGetFullURL(t *testing.T) {
 			name:   "Существует id, но значение пустое",
 			method: http.MethodGet,
 			path:   "/4bfsFae",
-			setupStorage: func(storage *storage.URLStorage) {
+			setupStorage: func(storage *storage.FileURLStorage) {
 				storage.SetURL("4bfsFae", "")
 			},
 			wantStatus: http.StatusBadRequest,
@@ -69,7 +70,8 @@ func TestGetFullURL(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			storage := storage.NewURLStorage()
+			file := filepath.Join(t.TempDir(), "urls.json")
+			storage, _ := storage.NewFileURLStorage(file)
 
 			if test.setupStorage != nil {
 				test.setupStorage(storage)

@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -22,8 +23,8 @@ func TestCreateShortURL(t *testing.T) {
 		wantErr       string
 		wantBodyPref  string
 		wantMapUpdate bool
-		//Проверка, что обе ссылки верные:
-		shortIDCheck     func(t *testing.T, createdShortID string, store *storage.URLStorage)
+		// Проверка, что обе ссылки верные:
+		shortIDCheck func(t *testing.T, createdShortID string, store *storage.FileURLStorage)
 	}{
 		{
 			name:          "Успешное сокращение",
@@ -32,7 +33,7 @@ func TestCreateShortURL(t *testing.T) {
 			wantStatus:    http.StatusCreated,
 			wantBodyPref:  "http://localhost:9090",
 			wantMapUpdate: true,
-			shortIDCheck: func(t *testing.T, createdShortID string, store *storage.URLStorage) {
+			shortIDCheck: func(t *testing.T, createdShortID string, store *storage.FileURLStorage) {
 				original, ok := store.GetOriginalURL(createdShortID)
 				assert.True(t, ok)
 				assert.Equal(t, "http://some.website", original)
@@ -66,7 +67,6 @@ func TestCreateShortURL(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
 			var body io.Reader
 			if test.body != "" && test.method == http.MethodPost {
 				body = strings.NewReader(test.body)
@@ -77,7 +77,8 @@ func TestCreateShortURL(t *testing.T) {
 				BaseShortURL: testBaseURL,
 			}
 
-			storage := storage.NewURLStorage()
+			file := filepath.Join(t.TempDir(), "urls.json")
+			storage, _ := storage.NewFileURLStorage(file)
 			h := NewShortener(storage, cfg)
 
 			r := chi.NewRouter()
@@ -107,7 +108,7 @@ func TestCreateShortURL(t *testing.T) {
 
 			if test.wantMapUpdate {
 				assert.False(t, storage.IsEmpty())
-				assert.Equal(t, 1, storage.Len()) //одна запись
+				assert.Equal(t, 1, storage.Len()) // одна запись
 
 				key := storage.GetKeys()[0]
 				if test.shortIDCheck != nil {

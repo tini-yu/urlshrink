@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -18,10 +19,10 @@ func TestCreateShortURLJSON(t *testing.T) {
 	type want struct {
 		status     int
 		bodyPrefix string // начало тела ответа (для успешного случая)
-		errorMsg   string 
-		jsonResult bool  
-		mapUpdated bool   
-		checkShort func(*testing.T, string, *storage.URLStorage)
+		errorMsg   string
+		jsonResult bool
+		mapUpdated bool
+		checkShort func(*testing.T, string, *storage.FileURLStorage)
 	}
 
 	tests := []struct {
@@ -41,7 +42,7 @@ func TestCreateShortURLJSON(t *testing.T) {
 				bodyPrefix: `"result":"`,
 				jsonResult: true,
 				mapUpdated: true,
-				checkShort: func(t *testing.T, shortID string, st *storage.URLStorage) {
+				checkShort: func(t *testing.T, shortID string, st *storage.FileURLStorage) {
 					orig, ok := st.GetOriginalURL(shortID)
 					assert.True(t, ok, "должна быть запись в хранилище")
 					assert.Equal(t, "https://example.com/very/long/path", orig)
@@ -120,7 +121,8 @@ func TestCreateShortURLJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testBaseURL := "http://short.url"
 			cfg := config.Config{BaseShortURL: testBaseURL}
-			st := storage.NewURLStorage() 
+			file := filepath.Join(t.TempDir(), "urls.json")
+			st, _ := storage.NewFileURLStorage(file)
 			h := NewShortener(st, cfg)
 
 			r := chi.NewRouter()

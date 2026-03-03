@@ -7,10 +7,10 @@ import (
 
 type Shortener struct {
 	cfg     config.Config
-	storage *storage.URLStorage
+	storage *storage.FileURLStorage
 }
 
-func NewShortener(storage *storage.URLStorage, cfg config.Config) *Shortener {
+func NewShortener(storage *storage.FileURLStorage, cfg config.Config) *Shortener {
 	return &Shortener{
 		storage: storage,
 		cfg:   cfg,

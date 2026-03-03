@@ -26,7 +26,10 @@ func main() {
 
 	zap.RedirectStdLog(zapLog)
 
-	storage := storage.NewURLStorage()
+	storage, err := storage.NewFileURLStorage(cfg.URLFilePath)
+	if err != nil {
+		log.Fatalf("Не удалось инициализировать файловое хранилище: %v", err)
+	}
 	shortener := handler.NewShortener(storage, cfg)
 
 	r := chi.NewRouter()

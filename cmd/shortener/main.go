@@ -30,9 +30,9 @@ func main() {
 	shortener := handler.NewShortener(storage, cfg)
 
 	r := chi.NewRouter()
-	r.Use(mware.ZapLoggerMiddleware(zapLog))
 	r.Use(mware.GzipMiddleware)
 	r.Use(middleware.Recoverer)
+	r.Use(mware.ZapLoggerMiddleware(zapLog))
 
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", shortener.CreateShortURL)

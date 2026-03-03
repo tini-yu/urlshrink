@@ -16,7 +16,7 @@ type compressWriter struct {
 
 func (w *compressWriter) Write(b []byte) (int, error) {
 	w.Once.Do(func() {
-		//ставим заголовок только при первой записи
+		// ставим заголовок только при первой записи
 		w.Header().Set("Content-Encoding", "gzip")
 		w.Header().Del("Content-Length")
 	})
@@ -61,12 +61,20 @@ func GzipMiddleware(next http.Handler) http.Handler {
 
 		// сжатие ответа
 		accept := r.Header.Get("Accept-Encoding")
-		supportsGzip := strings.Contains(accept, "gzip")
-
-		if supportsGzip {
+		if accept == "" {
+			// НЕ сжимаем если ничего нет
+			ow = w
+		} else if strings.Contains(accept, "gzip") {
+			// сжимаем только если явно поддерживает gzip
 			cw := newCompressWriter(w)
 			ow = cw
-			defer cw.Writer.(*gzip.Writer).Close()
+			defer func() {
+				if cw, ok := ow.(*compressWriter); ok {
+					cw.Writer.(*gzip.Writer).Close()
+				}
+			}()
+		} else {
+			ow = w
 		}
 
 		// распаковка входящего тела

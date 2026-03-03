@@ -21,7 +21,7 @@ func GzipMiddleware(next http.Handler) http.Handler {
 		}
 
 		// сжатие ТОЛЬКО при поддержке gzip
-		var zw http.ResponseWriter = w
+		zw := w
 		var cw *compWriter
 
 		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {

@@ -19,6 +19,16 @@ type FileURLStorage struct {
 	records  []URLRecord                
 }
 
+type URLStorageInterface interface {
+	GetOriginalURL(shortID string) (string, bool)
+	SetURL(shortID, originalURL string)
+    CheckShortURL(shortID string) bool           
+    Len() int                                     
+    IsEmpty() bool                              
+    GetKeys() []string                                       
+    SetIfNotExists(shortID, originalURL string) error
+}
+
 func NewFileURLStorage(filePath string) (*FileURLStorage, error) {
 	s := &FileURLStorage{
 		filePath: filePath,
@@ -119,12 +129,9 @@ func (s *FileURLStorage) SetIfNotExists(shortID, originalURL string) error {
 	// Добавляем в карту для быстрого поиска
 	s.urls[shortID] = originalURL
 
-	// Добавляем в массив для сохранения в файл
-	// UUID можно генерировать, если нужен, или оставить пустым / убрать из структуры
 	record := URLRecord{
 		ShortURL:    shortID,
 		OriginalURL: originalURL,
-		// UUID:        generateUUID(), // если нужен — реализуйте
 	}
 
 	s.records = append(s.records, record)

@@ -7,7 +7,7 @@ import (
 
 type Shortener struct {
 	cfg     config.Config
-	storage *storage.FileURLStorage
+	storage storage.URLStorageInterface
 }
 
 func NewShortener(storage *storage.FileURLStorage, cfg config.Config) *Shortener {

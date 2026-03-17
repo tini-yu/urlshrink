@@ -77,7 +77,7 @@ func TestGetFullURL(t *testing.T) {
 				test.setupStorage(storage)
 			}
 
-			h := NewShortener(storage, config.Config{}) // пустой конфиг сойдет
+			h := NewShortener(storage, config.Config{}, nil) // пустой конфиг сойдет
 			r := chi.NewRouter()
 			r.Get("/{id}", h.GetFullURL)
 

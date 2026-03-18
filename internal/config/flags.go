@@ -11,10 +11,11 @@ type Config struct {
 	HTTPAddr     string
 	BaseShortURL string
 	ServerPort   string
-	URLFilePath string
+	URLFilePath  string
+	DBPath       string
 }
 
-//Приоритет на переменную окружения, потом флаг, потом по умолчанию
+// Приоритет на переменную окружения, потом флаг, потом по умолчанию
 func Parse() Config {
 	var cfg Config
 
@@ -22,6 +23,7 @@ func Parse() Config {
 	flag.StringVar(&cfg.BaseShortURL, "b", "http://localhost:8080", "базовый адрес коротких ссылок")
 	flag.StringVar(&cfg.ServerPort, "server-port", "", "порт сервера (перезапись -a)")
 	flag.StringVar(&cfg.URLFilePath, "f", "urls_json", "путь до файла с URL")
+	flag.StringVar(&cfg.DBPath, "d", "", "адрес базы данных")
 
 	flag.Parse()
 
@@ -47,6 +49,10 @@ func Parse() Config {
 	if envURLFilePath := os.Getenv("FILE_STORAGE_PATH"); envURLFilePath != "" {
 		cfg.URLFilePath = envURLFilePath
 		log.Printf("Переопределен путь до файла с URL: %s", cfg.URLFilePath)
+	}
+	if envDBPath := os.Getenv("DATABASE_DSN"); envDBPath != "" {
+		cfg.DBPath = envDBPath
+		log.Printf("Адрес БД: %s", cfg.URLFilePath)
 	}
 
 	return cfg

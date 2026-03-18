@@ -79,7 +79,7 @@ func TestCreateShortURL(t *testing.T) {
 
 			file := filepath.Join(t.TempDir(), "urls.json")
 			storage, _ := storage.NewFileURLStorage(file)
-			h := NewShortener(storage, cfg)
+			h := NewShortener(storage, cfg, nil)
 
 			r := chi.NewRouter()
 			r.Post("/", h.CreateShortURL)

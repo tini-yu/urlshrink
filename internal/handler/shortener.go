@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"database/sql"
+
 	"github.com/tini-yu/urlshrink/internal/config"
 	"github.com/tini-yu/urlshrink/internal/storage"
 )
@@ -8,11 +10,13 @@ import (
 type Shortener struct {
 	cfg     config.Config
 	storage storage.URLStorageInterface
+	db      *sql.DB
 }
 
-func NewShortener(storage *storage.FileURLStorage, cfg config.Config) *Shortener {
+func NewShortener(storage storage.URLStorageInterface, cfg config.Config, db *sql.DB) *Shortener {
 	return &Shortener{
 		storage: storage,
-		cfg:   cfg,
+		cfg:     cfg,
+		db:      db,
 	}
 }

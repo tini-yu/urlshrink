@@ -34,8 +34,8 @@ func main() {
 	// Подключение к БД:
 	var db *sql.DB
 	if cfg.DBPath != "" {
-
-		db, err := sql.Open("pgx", cfg.DBPath)
+		var err error
+		db, err = sql.Open("pgx", cfg.DBPath)
 		if err != nil {
 			log.Fatalf("Не удалось подключиться к базе данных: %v", err)
 		}

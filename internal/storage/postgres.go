@@ -50,7 +50,6 @@ func (s *PostgresURLStorage) CheckShortURL(shortID string) bool {
 	return cnt == 1
 }
 
-// Самый важный метод — вставка только если не существует
 func (s *PostgresURLStorage) SetIfNotExists(shortID, originalURL string) error {
 	ctx := context.Background()
 
@@ -67,7 +66,7 @@ func (s *PostgresURLStorage) SetIfNotExists(shortID, originalURL string) error {
 	rows, _ := result.RowsAffected()
 	if rows == 0 {
 		// значит уже существовал
-		return ErrShortURLExists // или ErrKeyAlreadyExists — как тебе удобнее
+		return ErrShortURLExists
 	}
 
 	return nil
@@ -79,7 +78,6 @@ func (s *PostgresURLStorage) SetURL(shortID, originalURL string) {
 }
 
 func (s *PostgresURLStorage) Len() int {
-	// можно реализовать, но не обязательно
 	return -1
 }
 

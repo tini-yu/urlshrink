@@ -10,7 +10,6 @@ import (
 	"github.com/tini-yu/urlshrink/internal/logger"
 )
 
-// runMigrations — запускает все миграции из папки ./migrations
 func RunMigrations(db *sql.DB) error {
 	// Драйвер для уже открытой *sql.DB
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
@@ -26,13 +25,12 @@ func RunMigrations(db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("не удалось инициализировать миграции: %w", err)
 	}
-	defer m.Close()
-
+	
 	// Применяем все миграции вверх
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("ошибка применения миграций: %w", err)
 	}
-
+	
 	logger.L.Info("Миграции успешно применены")
 	return nil
 }

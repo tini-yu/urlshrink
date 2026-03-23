@@ -15,7 +15,7 @@ func (s *Shortener) PingDatabase(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// health-check
-	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
 	defer cancel()
 
 	if err := s.db.PingContext(ctx); err != nil {

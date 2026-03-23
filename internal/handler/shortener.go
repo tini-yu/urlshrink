@@ -13,7 +13,7 @@ type Shortener struct {
 	db      *sql.DB
 }
 
-func NewShortener(storage *storage.FileURLStorage, cfg config.Config, db *sql.DB) *Shortener {
+func NewShortener(storage storage.URLStorageInterface, cfg config.Config, db *sql.DB) *Shortener {
 	return &Shortener{
 		storage: storage,
 		cfg:     cfg,

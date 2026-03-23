@@ -9,8 +9,11 @@ import (
 
 	"github.com/tini-yu/urlshrink/internal/config"
 	"github.com/tini-yu/urlshrink/internal/handler"
+	"github.com/tini-yu/urlshrink/internal/logger"
 	mware "github.com/tini-yu/urlshrink/internal/middleware"
+	"github.com/tini-yu/urlshrink/internal/service"
 	"github.com/tini-yu/urlshrink/internal/storage"
+
 	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
@@ -23,19 +26,16 @@ func main() {
 	cfg := config.Parse()
 
 	// логгер zap
-	zapLog, err := zap.NewDevelopment() // потом NewProduction() поменять
-	if err != nil {
-		log.Fatalf("Не получилось инициализировать zap: %v", err)
-	}
-	defer zapLog.Sync()
+	logger.Init(false)
+	defer logger.Sync()
 
-	zap.RedirectStdLog(zapLog)
+	zap.RedirectStdLog(logger.L)
 
 	// Подключение к БД:
 	var db *sql.DB
 	if cfg.DBPath != "" {
 
-		db, err = sql.Open("pgx", cfg.DBPath)
+		db, err := sql.Open("pgx", cfg.DBPath)
 		if err != nil {
 			log.Fatalf("Не удалось подключиться к базе данных: %v", err)
 		}
@@ -46,19 +46,32 @@ func main() {
 			log.Fatalf("Не удалось подключиться к базе данных (Ping failed): %v\nDSN: %s", err, cfg.DBPath)
 		}
 
-		zapLog.Info("Успешно подключено к PostgreSQL")
+		logger.L.Info("Успешно подключено к PostgreSQL")
+
+		if err := service.RunMigrations(db); err != nil {
+			logger.L.Fatal("Ошибка миграций: ", zap.Error(err))
+		}
 	}
 
-	storage, err := storage.NewFileURLStorage(cfg.URLFilePath)
-	if err != nil {
-		log.Fatalf("Не удалось инициализировать файловое хранилище: %v", err)
+	// Переключение между файловой и БД:
+	var store storage.URLStorageInterface
+	if cfg.DBPath != "" {
+		store = storage.NewPostgresURLStorage(db)
+		logger.L.Info("Используется хранилище: PostgreSQL")
+	} else {
+		var err error
+		store, err = storage.NewFileURLStorage(cfg.URLFilePath)
+		if err != nil {
+			log.Fatalf("Не удалось инициализировать файловое хранилище: %v", err)
+		}
+		logger.L.Info("Используется хранилище: файл")
 	}
-	shortener := handler.NewShortener(storage, cfg, db)
+
+	shortener := handler.NewShortener(store, cfg, db)
 
 	r := chi.NewRouter()
-	// r.Use(mware.GzipMiddleware)
 	r.Use(middleware.Recoverer)
-	r.Use(mware.ZapLoggerMiddleware(zapLog))
+	r.Use(mware.ZapLoggerMiddleware(logger.L))
 
 	r.With(mware.GzipMiddleware).Route("/", func(r chi.Router) {
 		r.Post("/", shortener.CreateShortURL)
@@ -67,9 +80,9 @@ func main() {
 	})
 	r.Get("/ping", shortener.PingDatabase)
 
-	zapLog.Info("Сервер запущен", zap.String("address", cfg.HTTPAddr))
-	err = http.ListenAndServe(cfg.HTTPAddr, r)
+	logger.L.Info("Сервер запущен", zap.String("address", cfg.HTTPAddr))
+	err := http.ListenAndServe(cfg.HTTPAddr, r)
 	if err != nil {
-		zapLog.Fatal("Ошибка запуска сервера", zap.Error(err))
+		logger.L.Fatal("Ошибка запуска сервера", zap.Error(err))
 	}
 }

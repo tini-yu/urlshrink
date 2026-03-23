@@ -11,7 +11,7 @@ import (
 	"github.com/tini-yu/urlshrink/internal/handler"
 	"github.com/tini-yu/urlshrink/internal/logger"
 	mware "github.com/tini-yu/urlshrink/internal/middleware"
-	"github.com/tini-yu/urlshrink/internal/service"
+	"github.com/tini-yu/urlshrink/migrations"
 	"github.com/tini-yu/urlshrink/internal/storage"
 
 	"go.uber.org/zap"
@@ -48,7 +48,7 @@ func main() {
 
 		logger.L.Info("Успешно подключено к PostgreSQL")
 
-		if err := service.RunMigrations(db); err != nil {
+		if err := migrations.RunMigrations(db); err != nil {
 			logger.L.Fatal("Ошибка миграций: ", zap.Error(err))
 		}
 	}

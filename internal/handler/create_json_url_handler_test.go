@@ -123,7 +123,7 @@ func TestCreateShortURLJSON(t *testing.T) {
 			cfg := config.Config{BaseShortURL: testBaseURL}
 			file := filepath.Join(t.TempDir(), "urls.json")
 			st, _ := storage.NewFileURLStorage(file)
-			h := NewShortener(st, cfg)
+			h := NewShortener(st, cfg, nil)
 
 			r := chi.NewRouter()
 			r.Post("/api/shorten", h.CreateShortURLJSON)

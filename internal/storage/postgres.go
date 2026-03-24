@@ -11,9 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	ErrShortURLExists = errors.New("короткая ссылка уже существует")
-)
+var ErrShortURLExists = errors.New("короткая ссылка уже существует")
 
 type PostgresURLStorage struct {
 	db *sql.DB
@@ -87,4 +85,38 @@ func (s *PostgresURLStorage) IsEmpty() bool {
 
 func (s *PostgresURLStorage) GetKeys() []string {
 	return nil
+}
+
+// GetOrCreateShortURL - вставляет или возвращает существующий short_url по original_url
+// Возвращает существующий shortID, isNew (true = вставили новую запись), error
+func (s *PostgresURLStorage) GetOrCreateShortURL(proposedShortID, originalURL string) (string, bool, error) {
+	ctx := context.Background()
+
+	var finalShortID string
+	var isNew bool
+
+	err := s.db.QueryRowContext(ctx, `
+		WITH inserted AS (
+			INSERT INTO urls (short_url, original_url)
+			VALUES ($1, $2)
+			ON CONFLICT (original_url) DO NOTHING
+			RETURNING short_url
+		)
+		SELECT short_url, true AS is_new 
+		FROM inserted
+		
+		UNION ALL
+		
+		SELECT short_url, false AS is_new 
+		FROM urls 
+		WHERE original_url = $2 
+		  AND NOT EXISTS (SELECT 1 FROM inserted)
+		LIMIT 1
+	`, proposedShortID, originalURL).Scan(&finalShortID, &isNew)
+
+	if err != nil {
+		return "", false, fmt.Errorf("insert or conflict failed: %w", err)
+	}
+
+	return finalShortID, isNew, nil
 }

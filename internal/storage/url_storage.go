@@ -27,6 +27,7 @@ type URLStorageInterface interface {
     IsEmpty() bool                              
     GetKeys() []string                                       
     SetIfNotExists(shortID, originalURL string) error
+	GetOrCreateShortURL(shortID, originalURL string) (string, bool, error)
 }
 
 func NewFileURLStorage(filePath string) (*FileURLStorage, error) {
@@ -137,4 +138,9 @@ func (s *FileURLStorage) SetIfNotExists(shortID, originalURL string) error {
 	s.records = append(s.records, record)
 
 	return s.saveToFile()
+}
+
+//Заглушка
+func (s *FileURLStorage) GetOrCreateShortURL(proposedShortID, originalURL string) (string, bool, error) {
+ return "", false, nil
 }

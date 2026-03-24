@@ -77,6 +77,7 @@ func main() {
 		r.Post("/", shortener.CreateShortURL)
 		r.Get("/{id}", shortener.GetFullURL)
 		r.Post("/api/shorten", shortener.CreateShortURLJSON)
+		r.Post("/api/shorten/batch", shortener.ShortenBatch)
 	})
 	r.Get("/ping", shortener.PingDatabase)
 

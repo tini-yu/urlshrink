@@ -8,7 +8,6 @@ import (
 
 // стракт одного вхождения в файле
 type URLRecord struct {
-	// UUID        string `json:"uuid"`         // по заданию надо
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
@@ -25,9 +24,13 @@ type URLStorageInterface interface {
     CheckShortURL(shortID string) bool           
     Len() int                                     
     IsEmpty() bool                              
-    GetKeys() []string                                       
+    GetKeys() []string
+	//Основной метод для создания короткой ссылки:                                       
     SetIfNotExists(shortID, originalURL string) error
+	//Основной метод создания короткой ссылки для postgres | Обертка SetIfNotExists для файлового
 	GetOrCreateShortURL(shortID, originalURL string) (string, bool, error)
+	//Метод для записи батча в postgres
+	BatchCreateShortURLs(items []BatchCreateItem) ([]BatchCreateResult, error)
 }
 
 func NewFileURLStorage(filePath string) (*FileURLStorage, error) {
@@ -140,7 +143,23 @@ func (s *FileURLStorage) SetIfNotExists(shortID, originalURL string) error {
 	return s.saveToFile()
 }
 
-//Заглушка
+//Обертка SetIfNotExists
 func (s *FileURLStorage) GetOrCreateShortURL(proposedShortID, originalURL string) (string, bool, error) {
- return "", false, nil
+	err := s.SetIfNotExists(proposedShortID, originalURL)
+	if err == nil {
+		// Успешно создали новую ссылку
+		return proposedShortID, true, nil 
+	}
+
+	if errors.Is(err, ErrKeyAlreadyExists) {
+		// Коллизия по shortID
+		return "", false, ErrKeyAlreadyExists
+	}
+
+	return "", false, err
+}
+
+//заглушка
+func (s *FileURLStorage) BatchCreateShortURLs(items []BatchCreateItem) ([]BatchCreateResult, error) {
+	return nil, nil
 }
